@@ -18,7 +18,7 @@ public class MySQLConnection {
             Class.forName("com.mysql.cj.jdbc.Driver");   
             // Setup the connection with the DB
             if(connect==null){
-                    connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/webcrawler","root","webcrawler_1");
+                    connect = DriverManager.getConnection("jdbc:mysql://remotemysql.com:3306/fbmV4A0g3B","fbmV4A0g3B","nKVPcIUaOD");
                     createCrawlerTable();
             }
         return connect;

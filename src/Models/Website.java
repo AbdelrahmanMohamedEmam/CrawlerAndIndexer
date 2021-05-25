@@ -1,5 +1,6 @@
 package Models;
 
+
 public class Website {
     
     private int id;
@@ -33,5 +34,4 @@ public class Website {
     public void setIsVisited(boolean isVisited) {
         this.isVisited = isVisited;
     }
-
 }
