@@ -35,7 +35,7 @@ public class MySQLConnection {
             resultSet = preStatement.executeQuery();
           
                 preStatement = myConnection.prepareStatement(
-                        "CREATE TABLE `Crawler` ( `id` int(11) NOT NULL AUTO_INCREMENT, `url` varchar(255) DEFAULT NULL,`isVisited` BOOLEAN, PRIMARY KEY (`id`)) ENGINE=InnoDB;");
+                        "CREATE TABLE `Crawler` ( `id` int(11) NOT NULL AUTO_INCREMENT, `url` varchar(255) DEFAULT NULL,`status` TINYINT(2), PRIMARY KEY (`id`)) ENGINE=InnoDB;");
                 result = preStatement.execute();
                 this.close();
             return result;
@@ -48,15 +48,15 @@ public class MySQLConnection {
 
 
 
-    public void createWebsite(String url,boolean isVisited) {
+    public void createWebsite(String url,int status) {
         try{
             Connection myConnection=connectToMySQLDatabase();
    
             boolean result;
-            preStatement = myConnection.prepareStatement("INSERT INTO Crawler (url, isVisited) VALUES (?,?);",
+            preStatement = myConnection.prepareStatement("INSERT INTO Crawler (url, status) VALUES (?,?);",
                     ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             preStatement.setString(1,url);
-            preStatement.setBoolean(2,isVisited);
+            preStatement.setInt(2,status);
             result = preStatement.execute();
             //System.out.println(result);
         }catch(Exception e){
@@ -69,7 +69,7 @@ public class MySQLConnection {
         try {
             Connection myConnection = connectToMySQLDatabase();
             int size = 0;
-            preStatement = myConnection.prepareStatement("SELECT * FROM Crawler E where E.isVisited = false",
+            preStatement = myConnection.prepareStatement("SELECT * FROM Crawler E where E.status = 0",
                     ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             resultSet = preStatement.executeQuery();
             if (resultSet != null) {
@@ -83,7 +83,7 @@ public class MySQLConnection {
                     Website temp=new Website();
                     temp.setId(resultSet.getInt("id"));
                     temp.setUrl(resultSet.getString("url"));
-                    temp.setIsVisited(resultSet.getBoolean("isVisited"));
+                    temp.setIsVisited(resultSet.getBoolean("status"));
                     uncrawledSites.add(temp);
                 }
                 this.close();

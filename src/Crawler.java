@@ -1,88 +1,85 @@
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-
-import java.util.Scanner;
+import java.util.List;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 
 import Models.Website;
 
 
 
-public class Crawler {
+public class Crawler implements Runnable {
     MySQLConnection mySQLConnection=new MySQLConnection();
-    public ArrayList<String> readSeeds(){
-        ArrayList<String> data = new ArrayList<String>() ;
-        try {
-            File txt = new File("D:/CCE/CCE SENIOR 1/APT/projectV5 -indexer/CrawlerAndIndexer/seeds.txt");
-            Scanner scan;
-            scan = new Scanner(txt);
-            while(scan.hasNextLine()){
-                data.add(scan.nextLine());
-            }
-
-            scan.close();
-           
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        return data;  
+    List<Website>seeds;
+    List<Website> sites;
+    int seedsCount =0;
+    int totalNumberOfThreads=0;
+    Object lock=new Object();
+    Crawler(Object lock,int totalNumberOfThreads){
+        this.lock=lock;
+        this.totalNumberOfThreads=totalNumberOfThreads;
+    }
+    @Override
+    public void run() {
+        startCrawling();
     }
 
-    //TODO: THREADING
+
+   
     public void startCrawling() {
-        
-      
-        try {
-            //RUN SEEDS AND ADD IT TO THE DATABASE
-            ArrayList<String> seeds = readSeeds();
-
-            for (String x: seeds){
-                mySQLConnection.createWebsite(x, false);
-            }
-
-            int count = seeds.size();
-            ArrayList<Website> sites = mySQLConnection.retreiveUncrawledWebsite();
-            //LW MAWSELTESH LEL LIMIT BTA3Y W LESA 3ANDY 7AGAT NOT VISITED
-            while (count!=50 && sites.size()!=0){
-                String siteUrl = sites.get(0).getUrl();
-                //TODO: CHECK ROBOTS HENA
-                Document doc = Jsoup.connect(siteUrl).userAgent("Mozilla").get();
-                Elements links = doc.select("a");
-                links.forEach((link)->{
-                    String urlString = link.attr("abs:href");
-                    boolean checkRobotsTxt = checkRobots(urlString);
-                    if (checkRobotsTxt) {
-                    URL url;
-                    try {
-                        url = new URL(urlString);
-                        //CHECK EL PROTOCOL 3LSHAN LW FEH MAILTO: BADAL HTTPS AW HTTP
-                        if (url.getProtocol().equals("https") || url.getProtocol().equals("http")){
+        int threadNumber=Integer.parseInt(  Thread.currentThread().getName());
+   //     try {
+       synchronized(lock){
+            seeds=SeedsController.retreiveSeeds(threadNumber,totalNumberOfThreads);
+            seedsCount= seeds.size();
+            System.out.println("I am thread: "+threadNumber +" My start is "+seeds.get(0).getId()+" and my end is: "+ seeds.get(seeds.size()-1).getId());
+       }            
+            // //LW MAWSELTESH LEL LIMIT BTA3Y W LESA 3ANDY 7AGAT NOT VISITED
+            // while (seedsCount!=50 && sites.size()!=0){
+            //     String siteUrl = sites.get(0).getUrl();
+            //     Document doc = Jsoup.connect(siteUrl).userAgent("Mozilla").get();
+            //     Elements links = doc.select("a");
+            //     links.forEach((link)->{
+            //         String urlString = link.attr("abs:href");
+            //         boolean checkRobotsTxt = checkRobots(urlString);
+            //         if (checkRobotsTxt) {
+            //         URL url;
+            //         try {
+            //             url = new URL(urlString);
+            //             //CHECK EL PROTOCOL 3LSHAN LW FEH MAILTO: BADAL HTTPS AW HTTP
+            //             if (url.getProtocol().equals("https") || url.getProtocol().equals("http")){
                            
-                            //AT2AKED ENO MSH MAWGODA FEL DATABASE ALREADY
-                           ArrayList<Website> temp = mySQLConnection.retreiveWebsiteByUrl(urlString);
-                            if(temp.size()==0){
-                                //System.out.println(urlString);
-                                //ADD IT FEL DATABASE
-                               mySQLConnection.createWebsite(urlString, false);
-                            }
-                        }
-                    } catch (MalformedURLException e) {
-                        System.out.println(e.getMessage());
-                    }   
-                }
-                });
-                //NE2LEB EL ISVISITED W NEZAWED EL COUNT
-                mySQLConnection.updateIsVisitedWebsiteById(sites.get(0).getId());
-                count+=1;
-                sites = mySQLConnection.retreiveUncrawledWebsite();
-            }
+            //                 //AT2AKED ENO MSH MAWGODA FEL DATABASE ALREADY
+            //                ArrayList<Website> temp; 
+            //                synchronized(lock){
+            //                         temp = mySQLConnection.retreiveWebsiteByUrl(urlString);
+            //                }
+                 
+            //                 if(temp.size()==0){
+            //                     //System.out.println(urlString);
+            //                     //ADD IT FEL DATABASE
+            //                     synchronized(lock){
+            //                             mySQLConnection.createWebsite(urlString, false);
+            //                     }
+                         
+            //                 }
+            //             }
+            //         } catch (MalformedURLException e) {
+            //             System.out.println(e.getMessage());
+            //         }   
+            //     }
+            //     });
+            //     //NE2LEB EL ISVISITED W NEZAWED EL seedsCount
+            //     synchronized(lock){
+            //         mySQLConnection.updateIsVisitedWebsiteById(sites.get(0).getId());
+            //     }
+            //     seedsCount+=1;
+            //     synchronized(lock){
+            //         sites = mySQLConnection.retreiveUncrawledWebsite();
+            //     }
+            // }
 
 
             //(SORTED)WHILE THERE URLS WITH FALSE ISVISITED ATTRIBUTE || REACH LIMIT
@@ -95,13 +92,13 @@ public class Crawler {
                 //NE2LEB EL ISVISITED NE5ALEHA TRUE    
             
             
-        }catch(MalformedURLException ex){
-            System.out.println(ex.getMessage());
+        // }catch(MalformedURLException ex){
+        //     System.out.println(ex.getMessage());
         
-        } catch (IOException ex) {
+        // } catch (IOException ex) {
 
-            System.out.println(ex.getMessage());
-        }
+        //     System.out.println(ex.getMessage());
+        // }
     }
 
      public boolean checkRobots(String url) {
@@ -192,5 +189,8 @@ public class Crawler {
         
 
     }
+
+
+ 
 
 }
