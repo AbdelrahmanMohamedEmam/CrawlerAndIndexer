@@ -58,7 +58,7 @@ public class MySQLConnection {
             preStatement.setString(1,url);
             preStatement.setBoolean(2,isVisited);
             result = preStatement.execute();
-            System.out.println(result);
+            //System.out.println(result);
         }catch(Exception e){
             System.out.println(e.toString());
         }

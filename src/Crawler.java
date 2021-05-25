@@ -20,7 +20,7 @@ public class Crawler {
     public ArrayList<String> readSeeds(){
         ArrayList<String> data = new ArrayList<String>() ;
         try {
-            File txt = new File("D:/Spring 2021/Advanced programming techniques/CrawlerAndIndexer/seeds.txt");
+            File txt = new File("D:/CCE/CCE SENIOR 1/APT/projectV5 -indexer/CrawlerAndIndexer/seeds.txt");
             Scanner scan;
             scan = new Scanner(txt);
             while(scan.hasNextLine()){
@@ -37,6 +37,7 @@ public class Crawler {
 
     //TODO: THREADING
     public void startCrawling() {
+        
       
         try {
             //RUN SEEDS AND ADD IT TO THE DATABASE
@@ -67,7 +68,7 @@ public class Crawler {
                             //AT2AKED ENO MSH MAWGODA FEL DATABASE ALREADY
                            ArrayList<Website> temp = mySQLConnection.retreiveWebsiteByUrl(urlString);
                             if(temp.size()==0){
-                                System.out.println(urlString);
+                                //System.out.println(urlString);
                                 //ADD IT FEL DATABASE
                                mySQLConnection.createWebsite(urlString, false);
                             }
@@ -105,11 +106,18 @@ public class Crawler {
 
      public boolean checkRobots(String url) {
         try {
+            if(url.contains("#"))
+            {
+                return false;
+            }
             URL urlObj = null;
             urlObj = new URL(url);
             String path = urlObj.getPath();
             if(path.contains("#"))
+            {
                 return false;
+            }
+                
             String robotsFileUrl = urlObj.getProtocol() + "://" + urlObj.getHost() + "/robots.txt";
             Document doc = Jsoup.connect(robotsFileUrl).ignoreContentType(true).userAgent("Mozilla").get();
             String robotsText = doc.text();
