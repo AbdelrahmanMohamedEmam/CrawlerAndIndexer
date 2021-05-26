@@ -9,7 +9,7 @@ public class Website {
     private String url;
 
 
-    private boolean isVisited;
+    private int status;
 
     public int getId() {
         return id;
@@ -27,11 +27,11 @@ public class Website {
         this.url = url;
     }
 
-    public boolean getIsVisited() {
-        return isVisited;
+    public int getStatus() {
+        return this.status;
     }
 
-    public void setIsVisited(boolean isVisited) {
-        this.isVisited = isVisited;
+    public void setStatus(int status) {
+        this.status = status;
     }
 }
