@@ -1,5 +1,7 @@
 import java.util.Scanner;
 
+import org.json.JSONObject;
+
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -18,9 +20,10 @@ public class Main {
         //     threadArray[i].start();
         // }
 
-        Indexer indexer = new Indexer();
-        indexer.startIndexing();
+        // Indexer indexer = new Indexer();
+        // indexer.startIndexing();
 
+      
 
 
     }

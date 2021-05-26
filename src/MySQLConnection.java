@@ -1,9 +1,13 @@
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+
+import org.json.JSONObject;
+
 import Models.Website;
 
 public class MySQLConnection {
@@ -146,6 +150,22 @@ public class MySQLConnection {
             return result;
         }
     }
+
+    // public void addWord(String word,JSONObject jsonObject) {
+    //     try{
+    //         Connection myConnection=connectToMySQLDatabase();
+   
+    //         boolean result;
+
+    //         cs.setString(1, jsonObject.toString());
+    //         cs.setString(2, word);
+    //         result = cs.execute();
+    //         System.out.println(result);
+    //     }catch(Exception e){
+    //         System.out.println(e.toString());
+    //     }
+       
+    // }
 
     // private void writeResultSet(ResultSet resultSet) throws SQLException {
 
