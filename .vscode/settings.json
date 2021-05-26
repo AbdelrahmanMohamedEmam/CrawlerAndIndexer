@@ -2,6 +2,8 @@
     "java.project.referencedLibraries": [
         "lib/**/*.jar",
         "Jars/jsoup-1.13.1.jar",
-        "c:\\Program Files (x86)\\MySQL\\Connector J 8.0\\mysql-connector-java-8.0.25.jar"
+        "c:\\Program Files (x86)\\MySQL\\Connector J 8.0\\mysql-connector-java-8.0.25.jar",
+        "Jars/java-json.jar",
+        "Jars/porter-stemmer-1.0.0.jar"
     ]
 }
