@@ -15,16 +15,16 @@ enum STATUS {
 }
 
 public class Crawler implements Runnable {
-    MyDatabaseConnection myDatabaseConnection = new MyDatabaseConnection();
+    public static int CRAWLING_LIMIT = 20;
+    MyDatabaseConnection myDatabaseConnection;
+    SeedsController seedsController;
     int totalNumberOfThreads = 0;
-    static int crawlingLimit = 0;
-    List<Website> batchSizeQueue = new LinkedList<Website>();
-    List<String> extractedUrlsPerDocument = new LinkedList<String>();
-    Object lock;
+    static int crawledSites = 0;
 
-    Crawler(Object lock, int totalNumberOfThreads) {
-        this.lock = lock;
+    Crawler(int totalNumberOfThreads, MyDatabaseConnection myDatabaseConnection, SeedsController seedsController) {
+        this.myDatabaseConnection = myDatabaseConnection;
         this.totalNumberOfThreads = totalNumberOfThreads;
+        this.seedsController = seedsController;
     }
 
     @Override
@@ -34,24 +34,26 @@ public class Crawler implements Runnable {
 
     public void startCrawling() {
         int threadNumber = Integer.parseInt(Thread.currentThread().getName());
+        LinkedList<Website> batchSizeQueue = new LinkedList<Website>();
+        LinkedList<String> extractedUrlsPerDocument = new LinkedList<String>();
 
         try {
 
             /* Getting my seeds */
-            synchronized (lock) {
-                batchSizeQueue = SeedsController.retreiveSeeds(threadNumber, totalNumberOfThreads);
-                System.out.println("I am thread: " + threadNumber + " My start is " + batchSizeQueue.get(0).get_Id()
-                        + " and my end is: " + batchSizeQueue.get(batchSizeQueue.size() - 1).get_Id());
+            batchSizeQueue = (LinkedList<Website>) seedsController.retreiveSeeds(threadNumber, totalNumberOfThreads);
+
+            /* If seeds empty retreive again after sleeping 5 secs */
+            while (batchSizeQueue.isEmpty()) {
+                Thread.sleep(5000);
+                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0);
             }
 
-            while (crawlingLimit < 9) {
-
-                while (batchSizeQueue.size() != 0 && crawlingLimit < 9) {
-                    System.out.println("Ana thread 5ara 3ala dma8i:" + threadNumber
-                            + " we da5alt dek om el loop welbatch 5ara size bt3y awl index feh el id bta3o: "
-                            + batchSizeQueue.get(0).get_Id());
+            while (crawledSites < CRAWLING_LIMIT) {
+                while (batchSizeQueue.size() != 0 && crawledSites < CRAWLING_LIMIT) {
                     /* Get url of the first site in the queue */
                     String siteUrl = batchSizeQueue.get(0).getUrl();
+                    System.out.println("Thread no: " + threadNumber + " is crawling: " + siteUrl + ".............");
+
                     /* Get html document of this website */
                     Document doc = Jsoup.connect(siteUrl).userAgent("Mozilla").get();
                     /* Get all aTags in this document */
@@ -61,14 +63,12 @@ public class Crawler implements Runnable {
                      * Iterate on each aTag and get links in it and check for the robots file per
                      * document
                      */
-                    System.out.println("I am thread: " + threadNumber + " and i am extracting links from document");
                     aTags.forEach((aTag) -> {
 
                         /* Get absolute link in the aTag */
                         String urlString = aTag.attr("abs:href");
                         /* Check if this url valid for robots or not */
                         boolean checkRobotsTxt = checkRobots(urlString);
-
                         if (checkRobotsTxt) {
                             URL url;
                             try {
@@ -85,60 +85,44 @@ public class Crawler implements Runnable {
                         }
                     });
 
-                    System.out.println("I am thread: " + threadNumber + "and i finished extracting "
+                    System.out.println("I am thread: " + threadNumber + "and i finished crawling "
                             + extractedUrlsPerDocument.size() + " link");
 
-                    System.out.println("I am thread: " + threadNumber + " and i want to acquire the lock");
+                    /*
+                     * Add the extracted urls to the database
+                     */
 
-                    synchronized (lock) {
-
-                        //
-                        System.out.println("I am thread: " + threadNumber + " and i acquired the lock");
-                        /*
-                         * Add the extracted urls to the database
-                         */
-
-                        for (int i = 0; i < extractedUrlsPerDocument.size(); i++) {
-                            if (myDatabaseConnection.createWebsite(extractedUrlsPerDocument.get(i),
-                                    STATUS.UNTAKEN.ordinal())) {
-                                System.out.println(
-                                        "The url: " + extractedUrlsPerDocument.get(i) + " is added to the database.");
-                            }
-                        }
-
-                        /* Empty the extractedUrlsPerDocument */
-                        extractedUrlsPerDocument.clear();
-                        /*
-                         * Update the current working document to crawled and download it and remove it
-                         * from batch queue
-                         */
-
-                        if (myDatabaseConnection.updateStatusOfWebsiteBy_Id(batchSizeQueue.get(0).get_Id(),
-                                STATUS.CRAWLED.ordinal())) {
-                            System.out.println("I am thread: " + threadNumber + " and url: "
-                                    + batchSizeQueue.get(0).getUrl() + " status is changed to crawled to database.");
-                            downloadAndSave(batchSizeQueue.get(0).get_Id(), doc);
-                            batchSizeQueue.remove(0);
-                            crawlingLimit += 1;
-                            System.out.println(
-                                    "I am thread: " + threadNumber + " and the crawling limit is: " + crawlingLimit);
-                        }
-                        /* Increment Crawling limit */
-                        System.out.println("I am thread: " + threadNumber + " and i released the lock");
-
+                    if (myDatabaseConnection.createWebsites(extractedUrlsPerDocument, STATUS.UNTAKEN.ordinal())) {
+                        System.out.println(
+                                "-------------------------THE CRAWLED WEBSITES ARE ADDED SUCCESSFULLY!!-------------------------");
                     }
-                    System.out.println("Ana thread 5ara 3ala dma8i:" + threadNumber
-                            + " we 5aragt mn dek om el loop welbatch 5ara size bt3y awl index feh el id bta3o: "
-                            + batchSizeQueue.get(0).get_Id());
-                }
-                /* Retreive another batch of websites */
-            }
 
-            System.out.println("I am thread: " + threadNumber + " we 5alast");
+                    /* Empty the extractedUrlsPerDocument */
+                    extractedUrlsPerDocument.clear();
+
+                    /*
+                     * Update the current working document to crawled and remove it from batch queue
+                     */
+
+                    if (myDatabaseConnection.updateStatusOfWebsiteBy_Id(batchSizeQueue.get(0).get_Id(),
+                            STATUS.CRAWLED.ordinal(), threadNumber)) {
+                        System.out.println("The status of " + batchSizeQueue.get(0).getUrl()
+                                + " changed to crawled in the database");
+                        batchSizeQueue.remove(0);
+                        crawledSites += 1;
+                    }
+                }
+                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0);
+            }
+            System.out.println("################################################################");
+            System.out.println("   I am thread: " + threadNumber + "and i finished crawling     ");
+            System.out.println("################################################################");
         } catch (MalformedURLException ex) {
             System.out.println(ex.getMessage());
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
+        } catch (InterruptedException e) {
+            System.out.println("I am thread: " + threadNumber + " and i have been interrupted");
         }
     }
 
