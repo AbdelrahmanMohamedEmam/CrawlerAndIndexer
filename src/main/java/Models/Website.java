@@ -1,23 +1,21 @@
 package Models;
 
 
-public class Website {
-    
-    private int id;
-
+public class Website {    
+    private String _id;
 
     private String url;
 
-
     private int status;
 
-    public int getId() {
-        return id;
+    public String get_Id() {
+        return _id;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void set_Id(String id) {
+        this._id = id;
     }
+
 
     public String getUrl() {
         return url;

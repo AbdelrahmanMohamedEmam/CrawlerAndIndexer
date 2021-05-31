@@ -7,7 +7,8 @@ import java.util.Vector;
 import Models.Website;
 
 public class SeedsController {
-    static MySQLConnection mySQLConnection = new MySQLConnection();
+    
+    static MyDatabaseConnection mySQLConnection = new MyDatabaseConnection();
     static List<Website> seeds;
 
     public static void loadAndWriteSeedsInDatabase() {

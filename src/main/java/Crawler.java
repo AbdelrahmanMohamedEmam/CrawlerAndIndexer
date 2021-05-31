@@ -15,7 +15,7 @@ enum STATUS {
 }
 
 public class Crawler implements Runnable {
-    MySQLConnection mySQLConnection = new MySQLConnection();
+    MyDatabaseConnection myDatabaseConnection = new MyDatabaseConnection();
     int totalNumberOfThreads = 0;
     static int crawlingLimit = 0;
     List<Website> batchSizeQueue = new LinkedList<Website>();
@@ -40,8 +40,8 @@ public class Crawler implements Runnable {
             /* Getting my seeds */
             synchronized (lock) {
                 batchSizeQueue = SeedsController.retreiveSeeds(threadNumber, totalNumberOfThreads);
-                System.out.println("I am thread: " + threadNumber + " My start is " + batchSizeQueue.get(0).getId()
-                        + " and my end is: " + batchSizeQueue.get(batchSizeQueue.size() - 1).getId());
+                System.out.println("I am thread: " + threadNumber + " My start is " + batchSizeQueue.get(0).get_Id()
+                        + " and my end is: " + batchSizeQueue.get(batchSizeQueue.size() - 1).get_Id());
             }
 
             while (crawlingLimit < 9) {
@@ -49,7 +49,7 @@ public class Crawler implements Runnable {
                 while (batchSizeQueue.size() != 0 && crawlingLimit < 9) {
                     System.out.println("Ana thread 5ara 3ala dma8i:" + threadNumber
                             + " we da5alt dek om el loop welbatch 5ara size bt3y awl index feh el id bta3o: "
-                            + batchSizeQueue.get(0).getId());
+                            + batchSizeQueue.get(0).get_Id());
                     /* Get url of the first site in the queue */
                     String siteUrl = batchSizeQueue.get(0).getUrl();
                     /* Get html document of this website */
@@ -99,7 +99,7 @@ public class Crawler implements Runnable {
                          */
 
                         for (int i = 0; i < extractedUrlsPerDocument.size(); i++) {
-                            if (mySQLConnection.createWebsite(extractedUrlsPerDocument.get(i),
+                            if (myDatabaseConnection.createWebsite(extractedUrlsPerDocument.get(i),
                                     STATUS.UNTAKEN.ordinal())) {
                                 System.out.println(
                                         "The url: " + extractedUrlsPerDocument.get(i) + " is added to the database.");
@@ -113,11 +113,11 @@ public class Crawler implements Runnable {
                          * from batch queue
                          */
 
-                        if (mySQLConnection.updateStatusOfWebsiteById(batchSizeQueue.get(0).getId(),
+                        if (myDatabaseConnection.updateStatusOfWebsiteBy_Id(batchSizeQueue.get(0).get_Id(),
                                 STATUS.CRAWLED.ordinal())) {
                             System.out.println("I am thread: " + threadNumber + " and url: "
                                     + batchSizeQueue.get(0).getUrl() + " status is changed to crawled to database.");
-                            downloadAndSave(Integer.toString(batchSizeQueue.get(0).getId()), doc);
+                            downloadAndSave(batchSizeQueue.get(0).get_Id(), doc);
                             batchSizeQueue.remove(0);
                             crawlingLimit += 1;
                             System.out.println(
@@ -129,7 +129,7 @@ public class Crawler implements Runnable {
                     }
                     System.out.println("Ana thread 5ara 3ala dma8i:" + threadNumber
                             + " we 5aragt mn dek om el loop welbatch 5ara size bt3y awl index feh el id bta3o: "
-                            + batchSizeQueue.get(0).getId());
+                            + batchSizeQueue.get(0).get_Id());
                 }
                 /* Retreive another batch of websites */
             }

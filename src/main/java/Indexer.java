@@ -2,7 +2,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Scanner;
@@ -14,7 +13,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 public class Indexer {
 
-    MySQLConnection mySQLConnection=new MySQLConnection();
+    MyDatabaseConnection mySQLConnection=new MyDatabaseConnection();
     // Stemmer myStemmer  = new Stemmer();
     List<String> stopWords = new ArrayList<String>();
 
@@ -41,12 +40,11 @@ public class Indexer {
     }
 
 
-    void startIndexing(){
+    void startIndexing() throws JSONException{
         try {
-           
-            File in = new File("C:/Users/Ziadkamal/Desktop/Senior-1/APT/CrawlerAndIndexer/CrawlerAndIndexer/testHtml.html");
-            Document doc = Jsoup.parse(in, null);
-            
+            String url = "https://stackoverflow.com/questions/31740814/how-to-insert-put-a-json-array-in-the-basicdbobject";
+            Document doc = Jsoup.connect(url).get();
+
             //Title
             List<String> titles = getStemmedTitles(doc);
             
@@ -63,7 +61,6 @@ public class Indexer {
                 if(dict.get(word) != null){
 
                     int tf;
-                    int df;
                     int titleFrequency;
                     try {
 
@@ -85,8 +82,8 @@ public class Indexer {
                         innerJson.put("headingsFrequency", 0);
                         innerJson.put("titleFrequency", 1);            
                         innerJson.put("plainTextFrequency", 0);
-                        json.put("url",innerJson);
-                        json.put("DF", 1);
+                        innerJson.put("url", url);
+                        json.put("url", innerJson);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -120,8 +117,9 @@ public class Indexer {
                         innerJson.put("headingsFrequency", 1);
                         innerJson.put("titleFrequency", 0);            
                         innerJson.put("plainTextFrequency", 0);
+                        innerJson.put("url", url);
                         json.put("url", innerJson);
-                        json.put("DF", 1);
+             
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -155,8 +153,9 @@ public class Indexer {
                         innerJson.put("headingsFrequency", 0);
                         innerJson.put("titleFrequency", 0);            
                         innerJson.put("plainTextFrequency", 1);
+                        innerJson.put("url", url);
                         json.put("url", innerJson);
-                        json.put("DF", 1);
+                     
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -165,10 +164,17 @@ public class Indexer {
             }
             );
 
+
             
           
 
-            System.out.println(new JSONObject(dict));
+            //System.out.println(new JSONObject(dict));
+            for (String key : dict.keySet()) {
+                JSONObject jo= dict.get(key);
+                jo = jo.getJSONObject("url");
+                mySQLConnection.addWord(key, jo);
+              
+            }
 
       
           
