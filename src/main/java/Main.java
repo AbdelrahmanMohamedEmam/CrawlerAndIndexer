@@ -8,7 +8,7 @@ public class Main {
 
         SeedsController seedsController = new SeedsController();
         /*
-         * Initiallizing database with seeds
+         * Initiall5izing database with seeds
          */
         seedsController.loadSeedsToDatabase();
 
@@ -29,7 +29,7 @@ public class Main {
             threadArray[i].start();
         }
 
-        
+
     }
 
 }

@@ -139,7 +139,11 @@ public class Crawler implements Runnable {
 
             // getting the path to be checked
             String path = urlObj.getPath();
+<<<<<<< HEAD
             // System.out.println(path);
+=======
+
+>>>>>>> 04e6e170a380312ed1ae59eb49e6937d95fd2ead
 
             for (int i = 3; i < robotTextArray.length; i += 2) {
                 // check for disallowed paths
@@ -210,12 +214,21 @@ public class Crawler implements Runnable {
 
             }
         } catch (IOException ex) {
+<<<<<<< HEAD
             // the base url of the url does not have robots.txt file
             // System.out.println("this url does not have robots.txt file");
             return false;
 
         }
         // System.out.println(url + " -->>> " + checked);
+=======
+            //the base url of the url does not have robots.txt file
+  
+            return false;
+
+        }
+       
+>>>>>>> 04e6e170a380312ed1ae59eb49e6937d95fd2ead
         return checked;
 
     }

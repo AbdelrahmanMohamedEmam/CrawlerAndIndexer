@@ -11,16 +11,18 @@ import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+
+import Models.Website;
 public class Indexer {
 
-    MyDatabaseConnection mySQLConnection=new MyDatabaseConnection();
-    // Stemmer myStemmer  = new Stemmer();
+    MyDatabaseConnection myDatabaseConnection=new MyDatabaseConnection();
+
     List<String> stopWords = new ArrayList<String>();
 
 
     void initializeStopWords(){
 
-        File txt = new File("C:/Users/Ziadkamal/Desktop/Senior-1/APT/CrawlerAndIndexer/CrawlerAndIndexer/stopwords.txt");
+        File txt = new File("stopwords2.txt");
         Scanner scan;
         try {
             scan = new Scanner(txt);
@@ -39,10 +41,18 @@ public class Indexer {
         initializeStopWords();
     }
 
-
     void startIndexing() throws JSONException{
+        List<Website> websites = myDatabaseConnection.retrieveWebsitesByStatus(2);
+        for(Website website :websites){
+            startIndexingURL(website);
+            
+        }
+    }
+
+
+    void startIndexingURL(Website website) throws JSONException{
         try {
-            String url = "https://stackoverflow.com/questions/31740814/how-to-insert-put-a-json-array-in-the-basicdbobject";
+            String url = website.getUrl();
             Document doc = Jsoup.connect(url).get();
 
             //Title
@@ -172,10 +182,11 @@ public class Indexer {
             for (String key : dict.keySet()) {
                 JSONObject jo= dict.get(key);
                 jo = jo.getJSONObject("url");
-                mySQLConnection.addWord(key, jo);
+                myDatabaseConnection.addWord(key, jo);
               
             }
 
+            myDatabaseConnection.updateStatusOfWebsiteBy_Id(website.get_Id(), 3, 2);
       
           
            
@@ -194,6 +205,7 @@ public class Indexer {
         List<String> stemmedTitles= new ArrayList<String>();
         for(String word:titleWords){
             word = word.replaceAll("[^A-Za-z]", "");
+            
             if(word!=""  && !stopWords.contains(word)){
                 titleWordsProcessed.add(word);
             }
