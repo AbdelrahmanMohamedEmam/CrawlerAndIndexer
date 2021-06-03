@@ -76,17 +76,15 @@ public class MyDatabaseConnection {
             UpdateOptions updateOptions = new UpdateOptions();
             updateOptions.upsert(true);
 
-            List<Document> docs = new ArrayList<Document>();
+
             List<WriteModel<Document>> updates = new ArrayList<WriteModel<Document>>();
             for (int i = 0; i < url.size(); i++) {
-                // Document myDoc = new Document();
-                // myDoc.put("url", url.get(i));
-                // myDoc.put("status", status);
                 Bson update = Updates.setOnInsert("status", status);
                 updates.add(new UpdateOneModel<Document>(new Document("url", url.get(i)), update,
                         new UpdateOptions().upsert(true)));
             }
-            com.mongodb.bulk.BulkWriteResult bulkWriteResult = crawlerCollection.bulkWrite(updates);
+            //com.mongodb.bulk.BulkWriteResult bulkWriteResult = 
+            crawlerCollection.bulkWrite(updates);
 
             return true;
         } catch (Exception e) {

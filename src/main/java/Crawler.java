@@ -4,13 +4,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
 import java.util.regex.PatternSyntaxException;
-
-import javax.security.auth.callback.Callback;
-
-import com.mongodb.Function;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

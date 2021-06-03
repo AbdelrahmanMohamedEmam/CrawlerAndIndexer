@@ -175,10 +175,6 @@ public class Indexer {
             );
 
 
-            
-          
-
-            //System.out.println(new JSONObject(dict));
             for (String key : dict.keySet()) {
                 JSONObject jo= dict.get(key);
                 jo = jo.getJSONObject("url");
