@@ -10,7 +10,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="CrawlerAndIndexer" target="16" />
+      <module name="CrawlerAndIndexer" target="15" />
     </bytecodeTargetLevel>
   </component>
 </project>

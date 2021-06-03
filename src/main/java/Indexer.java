@@ -186,8 +186,7 @@ public class Indexer {
               
             }
 
-            myDatabaseConnection.updateStatusOfWebsiteBy_Id(website.get_Id(), 3);
-
+            myDatabaseConnection.updateStatusOfWebsiteBy_Id(website.get_Id(), 3, 2);
       
           
            
