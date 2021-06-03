@@ -1,23 +1,18 @@
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.InsertManyOptions;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.model.WriteModel;
-import com.mongodb.client.result.InsertManyResult;
-
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonObject;
@@ -29,6 +24,8 @@ import Models.Website;
 public class MyDatabaseConnection {
 
     private MongoClient mongoClient = null;
+    static int crawledSites = 0;
+    public static int CRAWLING_LIMIT = 10;
 
     public void connectToMySQLDatabase() throws Exception {
         try {
@@ -36,7 +33,6 @@ public class MyDatabaseConnection {
             if (mongoClient == null) {
                 mongoClient = MongoClients.create(
                         "mongodb+srv://rootUser:webcrawler_1@cluster0.gsdmf.mongodb.net/CrawlerAndIndexer?w=majority");
-
                 MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
                 db.getCollection("Indexer");
                 db.getCollection("Crawler");
@@ -101,6 +97,9 @@ public class MyDatabaseConnection {
 
     public synchronized LinkedList<Website> retreiveUncrawledWebsite(int status, int batchSize) {
         try {
+            if (crawledSites >= CRAWLING_LIMIT) {
+                return null;
+            }
             connectToMySQLDatabase();
             Bson filter = Filters.eq("status", status);
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
@@ -116,10 +115,12 @@ public class MyDatabaseConnection {
                 uncrawledSites.add(temp);
                 Bson queryFilter = Filters.eq("_id", new ObjectId(id));
                 Bson updateFilter = Updates.set("status", 1);
-
                 crawlerCollection.findOneAndUpdate(queryFilter, updateFilter);
             }
-
+            if(crawledSites>=CRAWLING_LIMIT){
+                return null;
+            }
+            crawledSites += uncrawledSites.size();
             return uncrawledSites;
         } catch (Exception e) {
             System.out.println(e.toString());

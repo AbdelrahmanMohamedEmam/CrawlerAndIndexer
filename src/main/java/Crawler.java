@@ -21,11 +21,11 @@ enum STATUS {
 }
 
 public class Crawler implements Runnable {
-    public static int CRAWLING_LIMIT = 20;
+
     MyDatabaseConnection myDatabaseConnection;
     SeedsController seedsController;
     int totalNumberOfThreads = 0;
-    static int crawledSites = 0;
+
     Object lock;
 
     Crawler(int totalNumberOfThreads, MyDatabaseConnection myDatabaseConnection, SeedsController seedsController,
@@ -62,14 +62,15 @@ public class Crawler implements Runnable {
             // CRAWLING_LIMIT - crawledSites);
             // }
 
-            synchronized (lock) {
-                if (crawledSites == CRAWLING_LIMIT) {
-                    return;
-                }
-                crawledSites += batchSizeQueue.size();
-            }
+            // synchronized (lock) {
+            //     if (crawledSites == CRAWLING_LIMIT) {
+            //         return;
+            //     }
+            //     crawledSites += batchSizeQueue.size();
+            // }
 
             while (true) {
+                
                 while (batchSizeQueue.size() != 0) {
                     /* Get url of the first site in the queue */
                     String siteUrl = batchSizeQueue.get(0).getUrl();
@@ -132,12 +133,9 @@ public class Crawler implements Runnable {
                         batchSizeQueue.remove(0);
                     }
                 }
-                synchronized (lock) {
-                    batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, CRAWLING_LIMIT - crawledSites);
-                    if (crawledSites == CRAWLING_LIMIT) {
-                        break;
-                    }
-                    crawledSites += batchSizeQueue.size();
+                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0,1);
+                if (batchSizeQueue == null) {
+                    break;
                 }
             }
             System.out.println("################################################################");
