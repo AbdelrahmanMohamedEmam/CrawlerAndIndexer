@@ -40,7 +40,7 @@ public class Crawler implements Runnable {
         LinkedList<Website> batchSizeQueue = new LinkedList<Website>();
         LinkedList<String> extractedUrlsPerDocument = new LinkedList<String>();
         try {
-            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, 2);
+            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, 2, threadNumber);
             while (true) {
                 while (batchSizeQueue.size() != 0) {
                     /* Get url of the first site in the queue */
@@ -96,7 +96,7 @@ public class Crawler implements Runnable {
                         batchSizeQueue.remove(0);
                     }
                 }
-                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, 2);
+                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, 2, threadNumber);
                 if (batchSizeQueue == null) {
                     break;
                 }
@@ -133,11 +133,8 @@ public class Crawler implements Runnable {
 
             // getting the path to be checked
             String path = urlObj.getPath();
-<<<<<<< HEAD
             // System.out.println(path);
-=======
 
->>>>>>> 04e6e170a380312ed1ae59eb49e6937d95fd2ead
 
             for (int i = 3; i < robotTextArray.length; i += 2) {
                 // check for disallowed paths
@@ -208,21 +205,11 @@ public class Crawler implements Runnable {
 
             }
         } catch (IOException ex) {
-<<<<<<< HEAD
-            // the base url of the url does not have robots.txt file
-            // System.out.println("this url does not have robots.txt file");
-            return false;
-
-        }
-        // System.out.println(url + " -->>> " + checked);
-=======
             //the base url of the url does not have robots.txt file
-  
             return false;
 
         }
        
->>>>>>> 04e6e170a380312ed1ae59eb49e6937d95fd2ead
         return checked;
 
     }
