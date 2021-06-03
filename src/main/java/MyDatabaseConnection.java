@@ -26,7 +26,7 @@ public class MyDatabaseConnection {
 
     private MongoClient mongoClient = null;
     static int crawledSites = 0;
-    public static int CRAWLING_LIMIT = 50;
+    public static int CRAWLING_LIMIT = 100;
 
     public void connectToMySQLDatabase() throws Exception {
         try {
@@ -57,7 +57,7 @@ public class MyDatabaseConnection {
         try {
             connectToMySQLDatabase();
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
-            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler1");
+            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler");
 
             if (crawlerCollection.countDocuments(Filters.eq("url", url)) == 0) {
                 Document myDoc = new Document();
@@ -80,10 +80,9 @@ public class MyDatabaseConnection {
         try {
             connectToMySQLDatabase();
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
-            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler1");
+            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler");
             UpdateOptions updateOptions = new UpdateOptions();
             updateOptions.upsert(true);
-
 
             List<WriteModel<Document>> updates = new ArrayList<WriteModel<Document>>();
             for (int i = 0; i < url.size(); i++) {
@@ -91,7 +90,7 @@ public class MyDatabaseConnection {
                 updates.add(new UpdateOneModel<Document>(new Document("url", url.get(i)), update,
                         new UpdateOptions().upsert(true)));
             }
-            //com.mongodb.bulk.BulkWriteResult bulkWriteResult = 
+            // com.mongodb.bulk.BulkWriteResult bulkWriteResult =
             crawlerCollection.bulkWrite(updates);
 
             return true;
@@ -101,9 +100,9 @@ public class MyDatabaseConnection {
         }
     }
 
-    public synchronized LinkedList<Website> retreiveUncrawledWebsite(int status, int batchSize, int ThreadNumber) {
+    public synchronized LinkedList<Website> retreiveUncrawledWebsite(int status, int batchSize) {
         try {
-            System.out.println("Crawled Sites: " + crawledSites + " FROM: "+ThreadNumber );
+
             if (crawledSites >= CRAWLING_LIMIT) {
                 return null;
             }
@@ -130,7 +129,7 @@ public class MyDatabaseConnection {
             if (crawledSites >= CRAWLING_LIMIT) {
                 return null;
             }
-            System.out.println("UncrawledSites Size: "+uncrawledSites.size());
+            System.out.println("UncrawledSites Size: " + uncrawledSites.size());
             crawledSites += uncrawledSites.size();
             return uncrawledSites;
         } catch (Exception e) {
@@ -141,13 +140,12 @@ public class MyDatabaseConnection {
 
     }
 
-
     public synchronized LinkedList<Website> retrieveWebsitesByStatus(int status) {
         try {
             connectToMySQLDatabase();
             Bson filter = Filters.eq("status", status);
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
-            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler1");
+            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler");
             FindIterable<Document> websites = crawlerCollection.find(filter);
             LinkedList<Website> uncrawledSites = new LinkedList<Website>();
             for (Document doc : websites) {
@@ -161,7 +159,7 @@ public class MyDatabaseConnection {
                 Bson updateFilter = Updates.set("status", 1);
                 crawlerCollection.findOneAndUpdate(queryFilter, updateFilter);
             }
-         
+
             return uncrawledSites;
         } catch (Exception e) {
             System.out.println(e.toString());
@@ -176,7 +174,7 @@ public class MyDatabaseConnection {
             connectToMySQLDatabase();
             Bson filter = Filters.eq("url", url);
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
-            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler1");
+            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler");
             FindIterable<Document> websites = crawlerCollection.find(filter);
             ArrayList<Website> uncrawledSites = new ArrayList<Website>();
             for (Document doc : websites) {
@@ -200,23 +198,21 @@ public class MyDatabaseConnection {
     public synchronized boolean updateStatusOfWebsiteBy_Id(String id, int status, int threadNumber) {
 
         try {
-            System.out.println("I am thread:" + threadNumber + "and i acquired the lock");
+
             connectToMySQLDatabase();
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
-            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler1");
+            MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler");
             Bson queryFilter = Filters.eq("_id", new ObjectId(id));
             Bson updateFilter = Updates.set("status", status);
             Document result = crawlerCollection.findOneAndUpdate(queryFilter, updateFilter);
             if (result == null) {
-                System.out.println("I am thread:" + threadNumber + "and i released the lock");
+
                 return false;
             } else {
-                System.out.println("I am thread:" + threadNumber + "and i released the lock");
                 return true;
             }
         } catch (Exception e) {
             System.out.println(e.toString());
-            System.out.println("I am thread:" + threadNumber + "and i released the lock");
             return false;
         }
     }
