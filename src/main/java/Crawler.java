@@ -5,6 +5,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+
+import javax.security.auth.callback.Callback;
+
+import com.mongodb.Function;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -20,36 +26,51 @@ public class Crawler implements Runnable {
     SeedsController seedsController;
     int totalNumberOfThreads = 0;
     static int crawledSites = 0;
+    Object lock;
 
-    Crawler(int totalNumberOfThreads, MyDatabaseConnection myDatabaseConnection, SeedsController seedsController) {
+    Crawler(int totalNumberOfThreads, MyDatabaseConnection myDatabaseConnection, SeedsController seedsController,
+            Object lock) {
         this.myDatabaseConnection = myDatabaseConnection;
         this.totalNumberOfThreads = totalNumberOfThreads;
         this.seedsController = seedsController;
+        this.lock = lock;
+
     }
 
     @Override
     public void run() {
+
         startCrawling();
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        System.out.println("Ana 5alast ya ged3aaaaaaaaaaaaaaaaaaaaaaaan " + Thread.currentThread().getName());
+
     }
 
     public void startCrawling() {
         int threadNumber = Integer.parseInt(Thread.currentThread().getName());
         LinkedList<Website> batchSizeQueue = new LinkedList<Website>();
         LinkedList<String> extractedUrlsPerDocument = new LinkedList<String>();
-
         try {
 
             /* Getting my seeds */
             batchSizeQueue = (LinkedList<Website>) seedsController.retreiveSeeds(threadNumber, totalNumberOfThreads);
 
-            /* If seeds empty retreive again after sleeping 5 secs */
-            while (batchSizeQueue.isEmpty()) {
-                Thread.sleep(5000);
-                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0);
+            // /* If seeds empty retreive again after sleeping 5 secs */
+            // while (batchSizeQueue.isEmpty()) {
+            // Thread.sleep(5000);
+            // batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0,
+            // CRAWLING_LIMIT - crawledSites);
+            // }
+
+            synchronized (lock) {
+                if (crawledSites == CRAWLING_LIMIT) {
+                    return;
+                }
+                crawledSites += batchSizeQueue.size();
             }
 
-            while (crawledSites < CRAWLING_LIMIT) {
-                while (batchSizeQueue.size() != 0 && crawledSites < CRAWLING_LIMIT) {
+            while (true) {
+                while (batchSizeQueue.size() != 0) {
                     /* Get url of the first site in the queue */
                     String siteUrl = batchSizeQueue.get(0).getUrl();
                     System.out.println("Thread no: " + threadNumber + " is crawling: " + siteUrl + ".............");
@@ -109,10 +130,15 @@ public class Crawler implements Runnable {
                         System.out.println("The status of " + batchSizeQueue.get(0).getUrl()
                                 + " changed to crawled in the database");
                         batchSizeQueue.remove(0);
-                        crawledSites += 1;
                     }
                 }
-                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0);
+                synchronized (lock) {
+                    batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, CRAWLING_LIMIT - crawledSites);
+                    if (crawledSites == CRAWLING_LIMIT) {
+                        break;
+                    }
+                    crawledSites += batchSizeQueue.size();
+                }
             }
             System.out.println("################################################################");
             System.out.println("   I am thread: " + threadNumber + "and i finished crawling     ");
@@ -121,8 +147,6 @@ public class Crawler implements Runnable {
             System.out.println(ex.getMessage());
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
-        } catch (InterruptedException e) {
-            System.out.println("I am thread: " + threadNumber + " and i have been interrupted");
         }
     }
 
@@ -172,7 +196,6 @@ public class Crawler implements Runnable {
             }
         } catch (IOException ex) {
             return false;
-
         }
         return true;
 

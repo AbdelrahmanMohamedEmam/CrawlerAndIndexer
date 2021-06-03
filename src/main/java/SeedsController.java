@@ -24,13 +24,16 @@ public class SeedsController {
             scan = new Scanner(txt);
             while (scan.hasNextLine()) {
                 data.add(scan.nextLine());
+                seedsNumber++;
             }
             scan.close();
             for (String x : data) {
                 mySQLConnection.createWebsite(x, SeedsController.STATUS.TAKEN.ordinal());
             }
-            seeds = mySQLConnection.retreiveUncrawledWebsite(SeedsController.STATUS.TAKEN.ordinal());
-            seedsNumber = seeds.size();
+         
+            seeds = mySQLConnection.retreiveUncrawledWebsite(SeedsController.STATUS.TAKEN.ordinal(), seedsNumber);
+            
+          
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -41,7 +44,7 @@ public class SeedsController {
         System.out.println("I am thread:" + threadNumber + "and i acquired the lock");
         /* Case: Number of threads greater than number of seeds. */
         LinkedList<Website> temp = new LinkedList<Website>();
-        if (totalNumberOfThreads >= seedsNumber) {
+        if (totalNumberOfThreads <= seedsNumber) {
 
             int batchSize = (int) Math.ceil((double) seedsNumber / (double) totalNumberOfThreads);
 

@@ -1,3 +1,4 @@
+import java.util.LinkedList;
 import java.util.Scanner;
 
 public class Main {
@@ -5,7 +6,11 @@ public class Main {
     public static void main(String[] args) throws Exception {
         MyDatabaseConnection myDatabaseConnection = new MyDatabaseConnection();
         SeedsController seedsController = new SeedsController();
-        seedsController.loadAndWriteSeedsInDatabase(); /* Initiallizing database with seeds */
+        Object lock = new Object();
+        seedsController.loadAndWriteSeedsInDatabase();
+        /*
+         * Initiallizing database with seeds
+         */
         Scanner sc = new Scanner(System.in);
         System.out.print("Enter number of threads: ");
         int numberOfThreads = sc.nextInt();
@@ -14,24 +19,11 @@ public class Main {
         Thread[] threadArray;
         threadArray = new Thread[numberOfThreads];
         for (int i = 0; i < numberOfThreads; i++) {
-            Crawler myCrawler = new Crawler(numberOfThreads, myDatabaseConnection, seedsController);
+            Crawler myCrawler = new Crawler(numberOfThreads, myDatabaseConnection, seedsController, lock);
             threadArray[i] = new Thread(myCrawler);
             threadArray[i].setName(String.valueOf(i));
             threadArray[i].start();
         }
-        // boolean running = true;
-        // while (running) {
-        // for (int i = 0; i < numberOfThreads; i++) {
-        // if (!threadArray[i].isAlive()) {
-        // running = false;
-        // break;
-        // }
-        // }
-        // }
-        // for (int i = 0; i < numberOfThreads; i++) {
-        // threadArray[i].interrupt();
-        // }
-
     }
 
 }

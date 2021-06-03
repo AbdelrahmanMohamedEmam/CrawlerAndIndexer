@@ -11,7 +11,11 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.InsertManyOptions;
+import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.result.InsertManyResult;
 
 import org.bson.Document;
@@ -73,16 +77,21 @@ public class MyDatabaseConnection {
             connectToMySQLDatabase();
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
             MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler");
+            UpdateOptions updateOptions = new UpdateOptions();
+            updateOptions.upsert(true);
+
             List<Document> docs = new ArrayList<Document>();
+            List<WriteModel<Document>> updates = new ArrayList<WriteModel<Document>>();
             for (int i = 0; i < url.size(); i++) {
-                if (crawlerCollection.countDocuments(Filters.eq("url", url)) == 0) {
-                    Document myDoc = new Document();
-                    myDoc.put("url", url.get(i));
-                    myDoc.put("status", status);
-                    docs.add(myDoc);
-                }
+                // Document myDoc = new Document();
+                // myDoc.put("url", url.get(i));
+                // myDoc.put("status", status);
+                Bson update = Updates.setOnInsert("status", status);
+                updates.add(new UpdateOneModel<Document>(new Document("url", url.get(i)), update,
+                        new UpdateOptions().upsert(true)));
             }
-            crawlerCollection.insertMany(docs);
+            com.mongodb.bulk.BulkWriteResult bulkWriteResult = crawlerCollection.bulkWrite(updates);
+
             return true;
         } catch (Exception e) {
             System.out.println(e.toString());
@@ -90,13 +99,13 @@ public class MyDatabaseConnection {
         }
     }
 
-    public synchronized LinkedList<Website> retreiveUncrawledWebsite(int status) {
+    public synchronized LinkedList<Website> retreiveUncrawledWebsite(int status, int batchSize) {
         try {
             connectToMySQLDatabase();
             Bson filter = Filters.eq("status", status);
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
             MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler");
-            FindIterable<Document> websites = crawlerCollection.find(filter);
+            FindIterable<Document> websites = crawlerCollection.find(filter).batchSize(batchSize);
             LinkedList<Website> uncrawledSites = new LinkedList<Website>();
             for (Document doc : websites) {
                 Website temp = new Website();
@@ -107,6 +116,7 @@ public class MyDatabaseConnection {
                 uncrawledSites.add(temp);
                 Bson queryFilter = Filters.eq("_id", new ObjectId(id));
                 Bson updateFilter = Updates.set("status", 1);
+
                 crawlerCollection.findOneAndUpdate(queryFilter, updateFilter);
             }
 
