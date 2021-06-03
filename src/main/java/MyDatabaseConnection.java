@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import com.mongodb.BasicDBObject;
@@ -25,7 +26,7 @@ public class MyDatabaseConnection {
 
     private MongoClient mongoClient = null;
     static int crawledSites = 0;
-    public static int CRAWLING_LIMIT = 10;
+    public static int CRAWLING_LIMIT = 50;
 
     public void connectToMySQLDatabase() throws Exception {
         try {
@@ -34,11 +35,18 @@ public class MyDatabaseConnection {
                 mongoClient = MongoClients.create(
                         "mongodb+srv://rootUser:webcrawler_1@cluster0.gsdmf.mongodb.net/CrawlerAndIndexer?w=majority");
                 MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
+                Bson filter1 = Filters.eq("status", 2);
+                Bson filter2 = Filters.eq("status", 3);
+                Iterable<Bson> iterable = Arrays.asList(filter1, filter2);
+                Bson filter = Filters.or(iterable);
                 db.getCollection("Indexer");
                 db.getCollection("Crawler");
+                crawledSites = (int) db.getCollection("Crawler").countDocuments(filter);
+                Bson filter3 = Filters.eq("status", 1);
+                Bson update = Updates.set("status", 0);
+                db.getCollection("Crawler").updateMany(filter3, update);
 
             }
-
         } catch (Exception e) {
             throw e;
         }
@@ -100,11 +108,14 @@ public class MyDatabaseConnection {
             if (crawledSites >= CRAWLING_LIMIT) {
                 return null;
             }
+            if (CRAWLING_LIMIT - crawledSites < batchSize) {
+                batchSize = CRAWLING_LIMIT - crawledSites;
+            }
             connectToMySQLDatabase();
             Bson filter = Filters.eq("status", status);
             MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
             MongoCollection<Document> crawlerCollection = mDatabase.getCollection("Crawler");
-            FindIterable<Document> websites = crawlerCollection.find(filter).batchSize(batchSize);
+            FindIterable<Document> websites = crawlerCollection.find(filter).limit(batchSize);
             LinkedList<Website> uncrawledSites = new LinkedList<Website>();
             for (Document doc : websites) {
                 Website temp = new Website();
@@ -117,7 +128,7 @@ public class MyDatabaseConnection {
                 Bson updateFilter = Updates.set("status", 1);
                 crawlerCollection.findOneAndUpdate(queryFilter, updateFilter);
             }
-            if(crawledSites>=CRAWLING_LIMIT){
+            if (crawledSites >= CRAWLING_LIMIT) {
                 return null;
             }
             crawledSites += uncrawledSites.size();

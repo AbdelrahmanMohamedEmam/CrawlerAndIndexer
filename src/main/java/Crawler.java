@@ -24,27 +24,21 @@ enum STATUS {
 public class Crawler implements Runnable {
 
     MyDatabaseConnection myDatabaseConnection;
-    SeedsController seedsController;
+
     int totalNumberOfThreads = 0;
 
     Object lock;
 
-    Crawler(int totalNumberOfThreads, MyDatabaseConnection myDatabaseConnection, SeedsController seedsController,
-            Object lock) {
+    Crawler(int totalNumberOfThreads, MyDatabaseConnection myDatabaseConnection) {
         this.myDatabaseConnection = myDatabaseConnection;
         this.totalNumberOfThreads = totalNumberOfThreads;
-        this.seedsController = seedsController;
-        this.lock = lock;
-
     }
 
     @Override
     public void run() {
-
         startCrawling();
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        System.out.println("Ana 5alast ya ged3aaaaaaaaaaaaaaaaaaaaaaaan " + Thread.currentThread().getName());
-
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!! I AM THREAD " + Thread.currentThread().getName()
+                + " AND I HAVE TERMINATED !!!!!!!!!!!!!!!!!!!!!!!");
     }
 
     public void startCrawling() {
@@ -52,30 +46,11 @@ public class Crawler implements Runnable {
         LinkedList<Website> batchSizeQueue = new LinkedList<Website>();
         LinkedList<String> extractedUrlsPerDocument = new LinkedList<String>();
         try {
-
-            /* Getting my seeds */
-            batchSizeQueue = (LinkedList<Website>) seedsController.retreiveSeeds(threadNumber, totalNumberOfThreads);
-
-            // /* If seeds empty retreive again after sleeping 5 secs */
-            // while (batchSizeQueue.isEmpty()) {
-            // Thread.sleep(5000);
-            // batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0,
-            // CRAWLING_LIMIT - crawledSites);
-            // }
-
-            // synchronized (lock) {
-            //     if (crawledSites == CRAWLING_LIMIT) {
-            //         return;
-            //     }
-            //     crawledSites += batchSizeQueue.size();
-            // }
-
+            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, 2);
             while (true) {
-                
                 while (batchSizeQueue.size() != 0) {
                     /* Get url of the first site in the queue */
                     String siteUrl = batchSizeQueue.get(0).getUrl();
-                    System.out.println("Thread no: " + threadNumber + " is crawling: " + siteUrl + ".............");
 
                     /* Get html document of this website */
                     Document doc = Jsoup.connect(siteUrl).userAgent("Mozilla").get();
@@ -107,18 +82,11 @@ public class Crawler implements Runnable {
                             }
                         }
                     });
-
-                    System.out.println("I am thread: " + threadNumber + "and i finished crawling "
-                            + extractedUrlsPerDocument.size() + " link");
-
                     /*
                      * Add the extracted urls to the database
                      */
 
-                    if (myDatabaseConnection.createWebsites(extractedUrlsPerDocument, STATUS.UNTAKEN.ordinal())) {
-                        System.out.println(
-                                "-------------------------THE CRAWLED WEBSITES ARE ADDED SUCCESSFULLY!!-------------------------");
-                    }
+                    myDatabaseConnection.createWebsites(extractedUrlsPerDocument, STATUS.UNTAKEN.ordinal());
 
                     /* Empty the extractedUrlsPerDocument */
                     extractedUrlsPerDocument.clear();
@@ -129,19 +97,16 @@ public class Crawler implements Runnable {
 
                     if (myDatabaseConnection.updateStatusOfWebsiteBy_Id(batchSizeQueue.get(0).get_Id(),
                             STATUS.CRAWLED.ordinal(), threadNumber)) {
-                        System.out.println("The status of " + batchSizeQueue.get(0).getUrl()
-                                + " changed to crawled in the database");
+                        System.out.println("----------------------------THE STATUS OF " + batchSizeQueue.get(0).getUrl()
+                                + " CHANGED TO CRAWLED IN THE DATABASE--------------------------------------");
                         batchSizeQueue.remove(0);
                     }
                 }
-                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0,1);
+                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, 2);
                 if (batchSizeQueue == null) {
                     break;
                 }
             }
-            System.out.println("################################################################");
-            System.out.println("   I am thread: " + threadNumber + "and i finished crawling     ");
-            System.out.println("################################################################");
         } catch (MalformedURLException ex) {
             System.out.println(ex.getMessage());
         } catch (IOException ex) {
@@ -155,117 +120,102 @@ public class Crawler implements Runnable {
             URL urlObj = null;
             urlObj = new URL(url);
 
-            //getting the link to the robots.txt file 
+            // getting the link to the robots.txt file
             String robotsFileUrl = urlObj.getProtocol() + "://" + urlObj.getHost() + "/robots.txt";
             Document doc = Jsoup.connect(robotsFileUrl).ignoreContentType(true).userAgent("Mozilla").get();
             String robotsText = doc.text();
 
-            //checking for user-agent: *
+            // checking for user-agent: *
             int index = robotsText.indexOf("User-Agent: *");
-            if(index == -1)
-            {
+            if (index == -1) {
                 index = robotsText.indexOf("User-agent: *");
-                if(index == -1) return false;
+                if (index == -1)
+                    return false;
             }
 
-            //spliting the array at the user-agent: *
+            // spliting the array at the user-agent: *
             String sub = robotsText.substring(index);
             String[] robotTextArray = sub.split(" ");
 
-
-            //getting the path to be checked
+            // getting the path to be checked
             String path = urlObj.getPath();
-            System.out.println(path);
+            // System.out.println(path);
 
-            for(int i =3 ; i< robotTextArray.length ; i+=2)
-            {
-                    //check for disallowed paths
-                if((robotTextArray[i-1]).equals( "Disallow:"))
-                {
+            for (int i = 3; i < robotTextArray.length; i += 2) {
+                // check for disallowed paths
+                if ((robotTextArray[i - 1]).equals("Disallow:")) {
                     // System.out.println(robotTextArray[i]);
-                    //case 1: Disallow all
-                    if((robotTextArray[i]).equals( "/") || (robotTextArray[i]).equals( "/*")) 
-                    {
+                    // case 1: Disallow all
+                    if ((robotTextArray[i]).equals("/") || (robotTextArray[i]).equals("/*")) {
                         checked = false;
                     }
-                     
-                    if(!path.equals("/"))
-                    {
-                        try{
-                            //replace any special character can be recognized as regex 
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\*", ".*");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\+", "\\\\+");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\?", "");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\$", "");
-                            path =path.replaceAll("\\$", "");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\-", "\\\\-");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\/", "\\\\/");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\#", "\\\\#");
-                            //case 2: a whole directory is disallowed
-                            if(robotTextArray[i].matches(".*\\/"))
-                            {
-                                if(path.matches(".*" +robotTextArray[i]+ ".*" ))
-                                    checked = false; 
+
+                    if (!path.equals("/")) {
+                        try {
+                            // replace any special character can be recognized as regex
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\*", ".*");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\+", "\\\\+");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\?", "");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\$", "");
+                            path = path.replaceAll("\\$", "");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\-", "\\\\-");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\/", "\\\\/");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\#", "\\\\#");
+                            // case 2: a whole directory is disallowed
+                            if (robotTextArray[i].matches(".*\\/")) {
+                                if (path.matches(".*" + robotTextArray[i] + ".*"))
+                                    checked = false;
                             }
-                            //case 3: a single endpoint is disallowed
-                            if(path.matches(".*" +robotTextArray[i] ))
-                            {
+                            // case 3: a single endpoint is disallowed
+                            if (path.matches(".*" + robotTextArray[i])) {
                                 checked = false;
                             }
-                        }catch(PatternSyntaxException e)
-                        {
-                            //to catch any regex matching errors
+                        } catch (PatternSyntaxException e) {
+                            // to catch any regex matching errors
+                            return false;
+                        }
+                    }
+                } else if ((robotTextArray[i - 1]).equals("Allow:")) {
+                    // if the path is not disallowed then it is allowed -> break and return
+                    if (checked != false) {
+
+                        // can use enum to handle this case or leave it as it is
+                    } else {
+                        try {
+                            // replace any special character can be recognized as regex
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\*", ".*");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\+", "\\\\+");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\?", "");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\$", "");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\-", "\\\\-");
+                            robotTextArray[i] = robotTextArray[i].replaceAll("\\/", "\\\\/");
+                            if (robotTextArray[i].matches(".*\\/")) {
+                                if (path.matches(".*" + robotTextArray[i] + ".*"))
+                                    checked = true;
+                            }
+                            if (path.matches(".*" + robotTextArray[i])) {
+                                checked = true;
+                            }
+                        } catch (PatternSyntaxException e) {
+                            // to catch any regex matching errors
                             return false;
                         }
                     }
                 }
-                else if((robotTextArray[i-1]).equals( "Allow:"))
-                {
-                    //if the path is not disallowed then it is allowed -> break and return
-                    if(checked != false)
-                    {
-                        
-                        //can use enum to handle this case or leave it as it is 
-                    }
-                    else{
-                        try{
-                            //replace any special character can be recognized as regex 
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\*", ".*");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\+", "\\\\+");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\?", "");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\$", "");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\-", "\\\\-");
-                            robotTextArray[i] =robotTextArray[i].replaceAll("\\/", "\\\\/");
-                            if(robotTextArray[i].matches(".*\\/"))
-                            {
-                                if(path.matches(".*" +robotTextArray[i]+ ".*" ))
-                                    checked = true; 
-                            }
-                            if(path.matches(".*" +robotTextArray[i] ))
-                            {
-                                checked = true;
-                            }
-                        }catch(PatternSyntaxException e)
-                        {
-                            //to catch any regex matching errors
-                            return false;
-                        }                        
-                    }
-                }
-                //reaching this step means that i have finished all allow/disallow permissions for this bot
-                else
-                {
+                // reaching this step means that i have finished all allow/disallow permissions
+                // for this bot
+                else {
                     break;
                 }
 
             }
         } catch (IOException ex) {
-            //the base url of the url does not have robots.txt file
-            System.out.println("this url does not have robots.txt file");
+            // the base url of the url does not have robots.txt file
+            // System.out.println("this url does not have robots.txt file");
             return false;
 
         }
-        System.out.println(url + " -->>> " + checked);
+        // System.out.println(url + " -->>> " + checked);
         return checked;
 
     }
