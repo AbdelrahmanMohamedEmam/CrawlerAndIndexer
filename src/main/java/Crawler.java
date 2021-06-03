@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.PatternSyntaxException;
 
 import javax.security.auth.callback.Callback;
 
@@ -151,53 +152,123 @@ public class Crawler implements Runnable {
     }
 
     public boolean checkRobots(String url) {
+        boolean checked = true;
         try {
-            if (url.contains("#")) {
-                return false;
-            }
             URL urlObj = null;
             urlObj = new URL(url);
-            String path = urlObj.getPath();
-            if (path.contains("#")) {
-                return false;
-            }
 
+            //getting the link to the robots.txt file 
             String robotsFileUrl = urlObj.getProtocol() + "://" + urlObj.getHost() + "/robots.txt";
             Document doc = Jsoup.connect(robotsFileUrl).ignoreContentType(true).userAgent("Mozilla").get();
             String robotsText = doc.text();
+
+            //checking for user-agent: *
             int index = robotsText.indexOf("User-Agent: *");
-            if (index == -1) {
+            if(index == -1)
+            {
                 index = robotsText.indexOf("User-agent: *");
-                if (index == -1)
-                    return false;
+                if(index == -1) return false;
             }
+
+            //spliting the array at the user-agent: *
             String sub = robotsText.substring(index);
-
             String[] robotTextArray = sub.split(" ");
-            for (int i = 3; i < robotTextArray.length; i += 2) {
 
-                if ((robotTextArray[i - 1]).equals("Disallow:")) {
-                    if ((robotTextArray[i]).equals("/")) // All are disallowed
+
+            //getting the path to be checked
+            String path = urlObj.getPath();
+            System.out.println(path);
+
+            for(int i =3 ; i< robotTextArray.length ; i+=2)
+            {
+                    //check for disallowed paths
+                if((robotTextArray[i-1]).equals( "Disallow:"))
+                {
+                    // System.out.println(robotTextArray[i]);
+                    //case 1: Disallow all
+                    if((robotTextArray[i]).equals( "/") || (robotTextArray[i]).equals( "/*")) 
                     {
-                        return false;
+                        checked = false;
                     }
-
-                    if (!path.equals("/")) {
-                        if ((robotTextArray[i]).contains(path)) {
+                     
+                    if(!path.equals("/"))
+                    {
+                        try{
+                            //replace any special character can be recognized as regex 
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\*", ".*");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\+", "\\\\+");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\?", "");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\$", "");
+                            path =path.replaceAll("\\$", "");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\-", "\\\\-");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\/", "\\\\/");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\#", "\\\\#");
+                            //case 2: a whole directory is disallowed
+                            if(robotTextArray[i].matches(".*\\/"))
+                            {
+                                if(path.matches(".*" +robotTextArray[i]+ ".*" ))
+                                    checked = false; 
+                            }
+                            //case 3: a single endpoint is disallowed
+                            if(path.matches(".*" +robotTextArray[i] ))
+                            {
+                                checked = false;
+                            }
+                        }catch(PatternSyntaxException e)
+                        {
+                            //to catch any regex matching errors
                             return false;
                         }
                     }
-                } else if ((robotTextArray[i - 1]).equals("Allow:")) {
-                    // check if it is allowed -> return true
-                } else {
+                }
+                else if((robotTextArray[i-1]).equals( "Allow:"))
+                {
+                    //if the path is not disallowed then it is allowed -> break and return
+                    if(checked != false)
+                    {
+                        
+                        //can use enum to handle this case or leave it as it is 
+                    }
+                    else{
+                        try{
+                            //replace any special character can be recognized as regex 
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\*", ".*");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\+", "\\\\+");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\?", "");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\$", "");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\-", "\\\\-");
+                            robotTextArray[i] =robotTextArray[i].replaceAll("\\/", "\\\\/");
+                            if(robotTextArray[i].matches(".*\\/"))
+                            {
+                                if(path.matches(".*" +robotTextArray[i]+ ".*" ))
+                                    checked = true; 
+                            }
+                            if(path.matches(".*" +robotTextArray[i] ))
+                            {
+                                checked = true;
+                            }
+                        }catch(PatternSyntaxException e)
+                        {
+                            //to catch any regex matching errors
+                            return false;
+                        }                        
+                    }
+                }
+                //reaching this step means that i have finished all allow/disallow permissions for this bot
+                else
+                {
                     break;
                 }
 
             }
         } catch (IOException ex) {
+            //the base url of the url does not have robots.txt file
+            System.out.println("this url does not have robots.txt file");
             return false;
+
         }
-        return true;
+        System.out.println(url + " -->>> " + checked);
+        return checked;
 
     }
 
