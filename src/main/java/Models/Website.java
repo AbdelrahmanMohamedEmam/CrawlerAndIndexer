@@ -1,7 +1,8 @@
 package Models;
 
 
-public class Website {    
+public class Website { 
+       
     private String _id;
 
     private String url;

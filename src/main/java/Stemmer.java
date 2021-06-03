@@ -3,7 +3,8 @@ import opennlp.tools.stemmer.PorterStemmer;
 class Stemmer{
     public static String stem(String word){
         PorterStemmer porterStemmer = new PorterStemmer();
-        String stem = porterStemmer.stem(word);
+        String wordToStem = word.toLowerCase();
+        String stem = porterStemmer.stem(wordToStem);
 
         return stem;
     }

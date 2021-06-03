@@ -63,7 +63,7 @@ public class MyDatabaseConnection {
 
     }
 
-    public ArrayList<Website> retreiveUncrawledWebsite(int status) {
+    public ArrayList<Website> retrieveWebsitesByStatus(int status) {
         try {
             connectToMySQLDatabase();
             Bson filter = Filters.eq("status", status);

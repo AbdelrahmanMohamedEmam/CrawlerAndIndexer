@@ -24,7 +24,7 @@ public class SeedsController {
             for (String x : data) {
                 mySQLConnection.createWebsite(x, STATUS.TAKEN.ordinal());
             }
-            seeds = mySQLConnection.retreiveUncrawledWebsite(STATUS.TAKEN.ordinal());
+            seeds = mySQLConnection.retrieveWebsitesByStatus(STATUS.TAKEN.ordinal());
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
