@@ -4,8 +4,8 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        MyDatabaseConnection myDatabaseConnection = new MyDatabaseConnection();
-
+         MyDatabaseConnection myDatabaseConnection = new MyDatabaseConnection();
+         myDatabaseConnection.initializeCrawlerData();
         SeedsController seedsController = new SeedsController();
         /*
          * Initiall5izing database with seeds
@@ -22,13 +22,15 @@ public class Main {
 
         Thread[] threadArray;
         threadArray = new Thread[numberOfThreads];
+    
         for (int i = 0; i < numberOfThreads; i++) {
             Crawler myCrawler = new Crawler(numberOfThreads, myDatabaseConnection);
             threadArray[i] = new Thread(myCrawler);
             threadArray[i].setName(String.valueOf(i));
             threadArray[i].start();
         }
-
+        // Indexer indexer = new Indexer();
+        // indexer.startIndexing();
 
     }
 

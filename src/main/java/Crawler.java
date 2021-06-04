@@ -133,6 +133,8 @@ public class Crawler implements Runnable {
 
             // getting the path to be checked
             String path = urlObj.getPath();
+            // System.out.println(path);
+
 
             for (int i = 3; i < robotTextArray.length; i += 2) {
                 // check for disallowed paths
