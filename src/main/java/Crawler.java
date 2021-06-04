@@ -21,7 +21,7 @@ public class Crawler implements Runnable {
 
     int totalNumberOfThreads = 0;
 
-    Object lock;
+    public static int LIMIT = 5;
 
     Crawler(int totalNumberOfThreads, MyDatabaseConnection myDatabaseConnection) {
         this.myDatabaseConnection = myDatabaseConnection;
@@ -40,7 +40,7 @@ public class Crawler implements Runnable {
         LinkedList<Website> batchSizeQueue = new LinkedList<Website>();
         LinkedList<String> extractedUrlsPerDocument = new LinkedList<String>();
         try {
-            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, 2, threadNumber);
+            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT);
             while (true) {
                 while (batchSizeQueue.size() != 0) {
                     /* Get url of the first site in the queue */
@@ -96,7 +96,7 @@ public class Crawler implements Runnable {
                         batchSizeQueue.remove(0);
                     }
                 }
-                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, 2, threadNumber);
+                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT);
                 if (batchSizeQueue == null) {
                     break;
                 }
@@ -205,11 +205,12 @@ public class Crawler implements Runnable {
 
             }
         } catch (IOException ex) {
-            //the base url of the url does not have robots.txt file
+            // the base url of the url does not have robots.txt file
+            // System.out.println("this url does not have robots.txt file");
             return false;
 
         }
-       
+        // System.out.println(url + " -->>> " + checked);
         return checked;
 
     }

@@ -54,7 +54,7 @@ public class Indexer {
         try {
             String url = website.getUrl();
             Document doc = Jsoup.connect(url).get();
-
+            System.out.println(url);
             //Title
             List<String> titles = getStemmedTitles(doc);
             
