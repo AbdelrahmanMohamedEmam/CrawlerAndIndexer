@@ -54,7 +54,7 @@ public class Indexer {
         try {
             String url = website.getUrl();
             Document doc = Jsoup.connect(url).get();
-            System.out.println(url);
+            
             //Title
             List<String> titles = getStemmedTitles(doc);
             
@@ -174,15 +174,23 @@ public class Indexer {
             }
             );
 
+            System.out.println("------------Indexed " + url + " and found " + dict.keySet().size() + " words---------");
+            List<String> words = new ArrayList<>();
+            List<JSONObject> jsonObjects = new ArrayList<>();
 
             for (String key : dict.keySet()) {
                 JSONObject jo= dict.get(key);
                 jo = jo.getJSONObject("url");
-                myDatabaseConnection.addWord(key, jo);
-              
+                words.add(key);
+                jsonObjects.add(jo);
             }
 
+            myDatabaseConnection.addWords(words, jsonObjects);
+
+
             myDatabaseConnection.updateStatusOfWebsiteBy_Id(website.get_Id(), 3, 2);
+            System.out.println("Finished adding them to the DB");
+            
       
           
            
