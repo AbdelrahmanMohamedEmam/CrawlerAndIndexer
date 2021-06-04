@@ -48,17 +48,24 @@ public class MyDatabaseConnection {
 
 
     public void initializeCrawlerData(){
-        MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
-        db.getCollection("Indexer");
-        db.getCollection("Crawler");
-        Bson filter1 = Filters.eq("status", 2);
-        Bson filter2 = Filters.eq("status", 3);
-        Iterable<Bson> iterable = Arrays.asList(filter1, filter2);
-        Bson filter = Filters.or(iterable);
-        crawledSites = (int) db.getCollection("Crawler").countDocuments(filter);
-        Bson filter3 = Filters.eq("status", 1);
-        Bson update = Updates.set("status", 0);
-        db.getCollection("Crawler").updateMany(filter3, update);
+        try {
+            connectToMySQLDatabase();
+            MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
+            db.getCollection("Indexer");
+            db.getCollection("Crawler");
+            Bson filter1 = Filters.eq("status", 2);
+            Bson filter2 = Filters.eq("status", 3);
+            Iterable<Bson> iterable = Arrays.asList(filter1, filter2);
+            Bson filter = Filters.or(iterable);
+            crawledSites = (int) db.getCollection("Crawler").countDocuments(filter);
+            Bson filter3 = Filters.eq("status", 1);
+            Bson update = Updates.set("status", 0);
+            db.getCollection("Crawler").updateMany(filter3, update);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+       
     }
 
     public boolean createWebsite(String url, int status) {
