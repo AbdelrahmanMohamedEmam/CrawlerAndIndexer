@@ -26,7 +26,7 @@ public class MyDatabaseConnection {
 
     private MongoClient mongoClient = null;
     static int crawledSites = 0;
-    public static int CRAWLING_LIMIT = 100;
+    public static int CRAWLING_LIMIT = 5000;
 
     public void connectToMySQLDatabase() throws Exception {
         try {

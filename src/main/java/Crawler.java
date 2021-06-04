@@ -21,7 +21,7 @@ public class Crawler implements Runnable {
 
     int totalNumberOfThreads = 0;
 
-    public static int LIMIT = 5;
+    public static int LIMIT = 10;
 
     Crawler(int totalNumberOfThreads, MyDatabaseConnection myDatabaseConnection) {
         this.myDatabaseConnection = myDatabaseConnection;
