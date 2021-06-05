@@ -69,22 +69,6 @@ public class MyDatabaseConnection {
 
     }
 
-
-    // public void initializeIndexerData(){
-    //     try {
-    //         connectToMySQLDatabase();
-    //         MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
-    //         db.getCollection("Crawler");
-    //         Bson filter = Filters.eq("status", 3);
-    //         indexedSites = (int) db.getCollection("Crawler").countDocuments(filter);
-
-    //     } catch (Exception e) {
-    //         // TODO Auto-generated catch block
-    //         e.printStackTrace();
-    //     }
-       
-    // }
-
     public boolean createWebsite(String url, int status) {
         boolean result = false;
         try {
@@ -188,9 +172,6 @@ public class MyDatabaseConnection {
                 temp.setStatus(doc.getInteger("status"));
                 temp.setUrl(doc.getString("url"));
                 uncrawledSites.add(temp);
-                // Bson queryFilter = Filters.eq("_id", new ObjectId(id));
-                // Bson updateFilter = Updates.set("status", 1);
-                // crawlerCollection.findOneAndUpdate(queryFilter, updateFilter);
             }
 
             return uncrawledSites;

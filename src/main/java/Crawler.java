@@ -41,8 +41,8 @@ public class Crawler implements Runnable {
         LinkedList<Website> batchSizeQueue = new LinkedList<Website>();
         LinkedList<String> extractedUrlsPerDocument = new LinkedList<String>();
         try {
-            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT);
-            if(batchSizeQueue==null){
+            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT, threadNumber);
+            if (batchSizeQueue == null) {
                 return;
             }
             while (true) {
