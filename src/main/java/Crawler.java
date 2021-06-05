@@ -36,11 +36,15 @@ public class Crawler implements Runnable {
     }
 
     public void startCrawling() {
+
         int threadNumber = Integer.parseInt(Thread.currentThread().getName());
         LinkedList<Website> batchSizeQueue = new LinkedList<Website>();
         LinkedList<String> extractedUrlsPerDocument = new LinkedList<String>();
         try {
-            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT, threadNumber);
+            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT);
+            if(batchSizeQueue==null){
+                return;
+            }
             while (true) {
                 while (batchSizeQueue.size() != 0) {
                     /* Get url of the first site in the queue */

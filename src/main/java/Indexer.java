@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -53,8 +54,8 @@ public class Indexer {
     void startIndexingURL(Website website) throws JSONException{
         try {
             String url = website.getUrl();
-            Document doc = Jsoup.connect(url).get();
-            System.out.println(url);
+            Document doc = Jsoup.connect(url).userAgent("Mozilla").get();
+            
             //Title
             List<String> titles = getStemmedTitles(doc);
             
@@ -174,19 +175,32 @@ public class Indexer {
             }
             );
 
+           
+            List<String> words = new ArrayList<>();
+            List<JSONObject> jsonObjects = new ArrayList<>();
 
             for (String key : dict.keySet()) {
                 JSONObject jo= dict.get(key);
                 jo = jo.getJSONObject("url");
-                myDatabaseConnection.addWord(key, jo);
-              
+                words.add(key);
+                jsonObjects.add(jo);
             }
+            System.out.println("------------Indexed " + url + " and found " + dict.keySet().size() + " words---------");
+
+            myDatabaseConnection.addWords(words, jsonObjects);
+
 
             myDatabaseConnection.updateStatusOfWebsiteBy_Id(website.get_Id(), 3, 2);
+            
       
           
            
-        } catch (IOException e) {
+        }
+        catch(UnknownHostException e){
+            e.printStackTrace();
+            myDatabaseConnection.updateStatusOfWebsiteBy_Id(website.get_Id(), -1, -1);
+        }
+         catch (IOException e) {
             e.printStackTrace();
         }
     }

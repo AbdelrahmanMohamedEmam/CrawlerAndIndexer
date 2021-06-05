@@ -16,7 +16,6 @@ import com.mongodb.client.model.Updates;
 import com.mongodb.client.model.WriteModel;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.json.JsonObject;
 import org.bson.types.ObjectId;
 import org.json.JSONObject;
 
@@ -26,6 +25,9 @@ public class MyDatabaseConnection {
 
     private MongoClient mongoClient = null;
     static int crawledSites = 0;
+ 
+    MongoCollection<Document> indexerCollection;
+    MongoCollection<Document> crawlerCollection;
     public static int CRAWLING_LIMIT = 5000;
 
     public void connectToMySQLDatabase() throws Exception {
@@ -37,6 +39,8 @@ public class MyDatabaseConnection {
                 MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
                 db.getCollection("Indexer");
                 db.getCollection("Crawler");
+                indexerCollection = db.getCollection("Indexer");
+                crawlerCollection = db.getCollection("Crawler");
 
             }
         } catch (Exception e) {
@@ -64,6 +68,22 @@ public class MyDatabaseConnection {
         }
 
     }
+
+
+    // public void initializeIndexerData(){
+    //     try {
+    //         connectToMySQLDatabase();
+    //         MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
+    //         db.getCollection("Crawler");
+    //         Bson filter = Filters.eq("status", 3);
+    //         indexedSites = (int) db.getCollection("Crawler").countDocuments(filter);
+
+    //     } catch (Exception e) {
+    //         // TODO Auto-generated catch block
+    //         e.printStackTrace();
+    //     }
+       
+    // }
 
     public boolean createWebsite(String url, int status) {
         boolean result = false;
@@ -233,40 +253,61 @@ public class MyDatabaseConnection {
         }
     }
 
-    public void addWord(String word, JSONObject jsonObject) {
+    public void addWords(List<String> words, List<JSONObject> jsonObject) {
         try {
             connectToMySQLDatabase();
-            MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
-            MongoCollection<Document> indexerCollection = mDatabase.getCollection("Indexer");
+            int counter = 0;
+        
+            List<WriteModel<Document>> bulkUpdates = new ArrayList<WriteModel<Document>>();
+            for (String word: words) {
+                Object o = BasicDBObject.parse(jsonObject.get(counter).toString());
+                DBObject dbObj = (DBObject) o;
 
-            Object o = BasicDBObject.parse(jsonObject.toString());
-            DBObject dbObj = (DBObject) o;
-            Bson queryFilter = Filters.eq("word", word);
-            List<DBObject> tempList = new ArrayList<DBObject>();
-            tempList.add(dbObj);
-            Bson updateFilter = Updates.addEachToSet("links", tempList);
-            Bson update2 = Updates.inc("df", 1);
-            Bson updates = Updates.combine(updateFilter, update2);
+                Bson queryFilter = Filters.eq("word", word);
+                List<DBObject> tempList = new ArrayList<DBObject>();
 
-            Document result = indexerCollection.findOneAndUpdate(queryFilter, updates);
-            if (result == null) {
+                tempList.add(dbObj);
+                Bson update1 = Updates.addEachToSet("links", tempList);
+                Bson update2 = Updates.inc("df", 1);
+            
+                Bson updates = Updates.combine(update1, update2);
 
-                Document myDoc = new Document();
-
-                myDoc.put("word", word);
-                myDoc.put("df", 1);
-                List<JsonObject> linksArray = new ArrayList<JsonObject>();
-                JsonObject jo = new JsonObject(jsonObject.toString());
-                linksArray.add(jo);
-                myDoc.append("links", linksArray);
-                indexerCollection.insertOne(myDoc);
-            } else {
-                System.out.println(result.toJson().toString());
+                bulkUpdates.add(new UpdateOneModel<Document>(queryFilter, updates,
+                        new UpdateOptions().upsert(true)));
+                counter++;        
             }
+ 
+            indexerCollection.bulkWrite(bulkUpdates);
+            System.out.println("End Loop");
 
         } catch (Exception e) {
             System.out.println(e.toString());
         }
 
+    }
+
+    public void calculateIDF(){
+        try {
+            connectToMySQLDatabase(); 
+            Bson filter = Filters.eq("status", 3);
+            int indexedSites = (int)crawlerCollection.countDocuments(filter);
+
+            Bson update =  Document.parse("{\n" +
+            "  $addFields: {idf:{$divide:["+indexedSites+",\"$df\"]}},\n" +
+            "   }");
+
+            List<Bson> updates = new ArrayList<>();
+            filter = Filters.empty();
+            updates.add(update);
+            indexerCollection.updateMany(filter, updates);
+            
+            
+   
+
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 }
