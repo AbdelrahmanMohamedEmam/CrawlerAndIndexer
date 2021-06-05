@@ -253,41 +253,29 @@ public class MyDatabaseConnection {
     public void addWords(List<String> words, List<JSONObject> jsonObject) {
         try {
             connectToMySQLDatabase();
-            List<String> notFound = new ArrayList<>();
-
             int counter = 0;
-            for (String word: words){
-
+        
+            List<WriteModel<Document>> bulkUpdates = new ArrayList<WriteModel<Document>>();
+            for (String word: words) {
                 Object o = BasicDBObject.parse(jsonObject.get(counter).toString());
                 DBObject dbObj = (DBObject) o;
+
                 Bson queryFilter = Filters.eq("word", word);
                 List<DBObject> tempList = new ArrayList<DBObject>();
+
                 tempList.add(dbObj);
-                Bson updateFilter = Updates.addEachToSet("links", tempList);
+                Bson update1 = Updates.addEachToSet("links", tempList);
                 Bson update2 = Updates.inc("df", 1);
-                Bson updates = Updates.combine(updateFilter, update2);
-                Document result = indexerCollection.findOneAndUpdate(queryFilter, updates);
-                if(result == null){
-                    notFound.add(word);
-                }
-
-                counter++;
-
-            }
-
-            List<Document> documents = new ArrayList<>();
-            for(String word: notFound){
-                Document myDoc = new Document();
-                myDoc.put("word", word);
-                myDoc.put("df", 1);
-                List<JsonObject> linksArray = new ArrayList<JsonObject>();
-                JsonObject jo = new JsonObject(jsonObject.toString());
-                linksArray.add(jo);
-                myDoc.append("links", linksArray);
-                documents.add(myDoc);
-            }
             
-            indexerCollection.insertMany(documents);
+                Bson updates = Updates.combine(update1, update2);
+
+                bulkUpdates.add(new UpdateOneModel<Document>(queryFilter, updates,
+                        new UpdateOptions().upsert(true)));
+                counter++;        
+            }
+ 
+            indexerCollection.bulkWrite(bulkUpdates);
+            System.out.println("End Loop");
 
         } catch (Exception e) {
             System.out.println(e.toString());
@@ -297,20 +285,22 @@ public class MyDatabaseConnection {
 
     public void calculateIDF(){
         try {
-            connectToMySQLDatabase();
-            MongoDatabase mDatabase = mongoClient.getDatabase("CrawlerAndIndexer");
-            
+            connectToMySQLDatabase(); 
             Bson filter = Filters.eq("status", 3);
             int indexedSites = (int)crawlerCollection.countDocuments(filter);
 
-        
-            indexerCollection.find().forEach((doc)->{
-                Bson filter2 = Filters.eq("word", doc.get("word"));  
-                int df = doc.getInteger("df");
-                Bson update = Updates.set("idf", indexedSites/df);      
-                indexerCollection.updateMany(filter2, update);
-            });
-          
+            Bson update =  Document.parse("{\n" +
+            "  $addFields: {idf:{$divide:["+indexedSites+",\"$df\"]}},\n" +
+            "   }");
+
+            List<Bson> updates = new ArrayList<>();
+            filter = Filters.empty();
+            updates.add(update);
+            indexerCollection.updateMany(filter, updates);
+            
+            
+   
+
 
         } catch (Exception e) {
             // TODO Auto-generated catch block
