@@ -40,14 +40,28 @@ public class Crawler implements Runnable {
         LinkedList<Website> batchSizeQueue = new LinkedList<Website>();
         LinkedList<String> extractedUrlsPerDocument = new LinkedList<String>();
         try {
-            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT);
+            batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT, threadNumber);
             while (true) {
                 while (batchSizeQueue.size() != 0) {
                     /* Get url of the first site in the queue */
                     String siteUrl = batchSizeQueue.get(0).getUrl();
 
                     /* Get html document of this website */
-                    Document doc = Jsoup.connect(siteUrl).userAgent("Mozilla").get();
+                    System.out.println(siteUrl);
+                    Document doc;
+                    try {
+                        doc = Jsoup.connect(siteUrl).userAgent("Mozilla").get();
+                    } catch (IOException ex) {
+                        System.out.println(ex.getMessage());
+                        if (myDatabaseConnection.updateStatusOfWebsiteBy_Id(batchSizeQueue.get(0).get_Id(), -1,
+                                threadNumber)) {
+                            System.out.println("---------------THE STATUS OF " + batchSizeQueue.get(0).getUrl()
+                                    + " CHANGED TO MALFORMED IN THE DATABASE---------------");
+                        }
+                        batchSizeQueue.remove(0);
+                        continue;
+                    }
+
                     /* Get all aTags in this document */
                     Elements aTags = doc.select("a");
 
@@ -91,20 +105,19 @@ public class Crawler implements Runnable {
 
                     if (myDatabaseConnection.updateStatusOfWebsiteBy_Id(batchSizeQueue.get(0).get_Id(),
                             STATUS.CRAWLED.ordinal(), threadNumber)) {
-                        System.out.println("----------------------------THE STATUS OF " + batchSizeQueue.get(0).getUrl()
-                                + " CHANGED TO CRAWLED IN THE DATABASE--------------------------------------");
+                        System.out.println("---------------THE STATUS OF " + batchSizeQueue.get(0).getUrl()
+                                + " CHANGED TO CRAWLED IN THE DATABASE---------------");
                         batchSizeQueue.remove(0);
                     }
                 }
-                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT);
-                if (batchSizeQueue == null) {
+                batchSizeQueue = myDatabaseConnection.retreiveUncrawledWebsite(0, LIMIT, threadNumber);
+                if (batchSizeQueue == null
+                        && (MyDatabaseConnection.crawledSites >= MyDatabaseConnection.CRAWLING_LIMIT)) {
                     break;
                 }
             }
-        } catch (MalformedURLException ex) {
-            System.out.println(ex.getMessage());
-        } catch (IOException ex) {
-            System.out.println(ex.getMessage());
+        } catch (Error e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -134,7 +147,6 @@ public class Crawler implements Runnable {
             // getting the path to be checked
             String path = urlObj.getPath();
             // System.out.println(path);
-
 
             for (int i = 3; i < robotTextArray.length; i += 2) {
                 // check for disallowed paths

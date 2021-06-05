@@ -37,8 +37,6 @@ public class MyDatabaseConnection {
                 MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
                 db.getCollection("Indexer");
                 db.getCollection("Crawler");
-                
-               
 
             }
         } catch (Exception e) {
@@ -46,8 +44,7 @@ public class MyDatabaseConnection {
         }
     }
 
-
-    public void initializeCrawlerData(){
+    public void initializeCrawlerData() {
         try {
             connectToMySQLDatabase();
             MongoDatabase db = mongoClient.getDatabase("CrawlerAndIndexer");
@@ -62,10 +59,10 @@ public class MyDatabaseConnection {
             Bson update = Updates.set("status", 0);
             db.getCollection("Crawler").updateMany(filter3, update);
         } catch (Exception e) {
-            // TODO Auto-generated catch block
+
             e.printStackTrace();
         }
-       
+
     }
 
     public boolean createWebsite(String url, int status) {
@@ -116,7 +113,7 @@ public class MyDatabaseConnection {
         }
     }
 
-    public synchronized LinkedList<Website> retreiveUncrawledWebsite(int status, int batchSize) {
+    public synchronized LinkedList<Website> retreiveUncrawledWebsite(int status, int batchSize, int threadNumber) {
         try {
 
             if (crawledSites >= CRAWLING_LIMIT) {
@@ -145,7 +142,7 @@ public class MyDatabaseConnection {
             if (crawledSites >= CRAWLING_LIMIT) {
                 return null;
             }
-            System.out.println("UncrawledSites Size: " + uncrawledSites.size());
+            System.out.println("UncrawledSites Size: " + uncrawledSites.size() + " From thread " + threadNumber);
             crawledSites += uncrawledSites.size();
             return uncrawledSites;
         } catch (Exception e) {
@@ -221,6 +218,9 @@ public class MyDatabaseConnection {
             Bson queryFilter = Filters.eq("_id", new ObjectId(id));
             Bson updateFilter = Updates.set("status", status);
             Document result = crawlerCollection.findOneAndUpdate(queryFilter, updateFilter);
+            if (status == -1) {
+                crawledSites--;
+            }
             if (result == null) {
 
                 return false;
